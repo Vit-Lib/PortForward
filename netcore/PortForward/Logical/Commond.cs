@@ -1,29 +1,17 @@
-﻿#region << 版本注释 - v2 >>
-/*
- * ========================================================================
- * 版本：v2
- * 时间：190212
- * 作者：Lith   
- * Q  Q：755944120
- * 邮箱：litsoft@126.com
- * 
- * ========================================================================
-*/
-#endregion
-
-using PortForward.Common;
+﻿using PortForward.Common;
 using System;
+using Vit.Core.Module.Log;
 
 namespace PortForward
 {
     public class Commond
     {
-        public Action<string> OnWriteLine;
 
+        public static Action<string> PrintConnectionInfo = null;
 
         private void WriteLine(string value)
         {
-            OnWriteLine?.Invoke(value);
+            Console.WriteLine(value);     
         }
 
         /// <summary>
@@ -68,9 +56,9 @@ namespace PortForward
 
             //定义显示输出
             if (config.Length <= 7 || "NoPrint" != config[7])
-                mng.ConsoleWriteLine = WriteLine;
+                PrintConnectionInfo = Logger.Info;
 
-            mng.ConsoleWriteLine("开始...");
+            WriteLine("开始...");
             mng.StartConnectThread(connectCount);
 
         }
@@ -95,8 +83,9 @@ namespace PortForward
 
             //定义显示输出
             if (config.Length <= 4 || "NoPrint" != config[4])
-                mng.ConsoleWriteLine = WriteLine;
-            mng.ConsoleWriteLine("开始...");
+                PrintConnectionInfo = Logger.Info;
+
+            WriteLine("开始...");
             mng.StartLinstening();
         }
         #endregion
@@ -120,9 +109,9 @@ namespace PortForward
 
             //定义显示输出
             if (config.Length <= 4 || "NoPrint" != config[4])
-                mng.ConsoleWriteLine = WriteLine;
+                PrintConnectionInfo = Logger.Info;
 
-            mng.ConsoleWriteLine("开始...");
+            WriteLine("开始...");
             mng.StartLinstening();
         }
         #endregion

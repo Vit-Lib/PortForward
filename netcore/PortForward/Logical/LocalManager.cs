@@ -1,77 +1,55 @@
-﻿#region << 版本注释 - v2 >>
-/*
- * ========================================================================
- * 版本：v2
- * 时间：190212
- * 作者：Lith   
- * Q  Q：755944120
- * 邮箱：litsoft@126.com
- * 
- * ========================================================================
-*/
-#endregion
-
-using Framework.Util.Socket;
+﻿using Sers.CL.Socket.Iocp;
 using System;
-using System.Net;
-using System.Net.Sockets;
+using Vit.Core.Module.Log;
 
 namespace PortForward.Common
 {
     public class LocalManager
-    {
-        public Action<string> ConsoleWriteLine =  (msg) => {     };//Console.WriteLine;//
-
-
-
- 
+    {       
         /// <summary>
         /// 
         /// </summary>
         public int inputConn_Port;
 
         /// <summary>
-        /// dns  or ip
+        /// dns or ip
         /// </summary>
         public string outputConn_Host = "127.0.0.1";
-        public int outputConn_Port;
+        public int outputConn_Port;      
 
-        IPAddress outputConn_IPAddress
-        {
-            get
-            {
-                return TcpHelp.ParseToIPAddress(outputConn_Host);
-            }
-        }
-
-
+        DeliveryServer server = new DeliveryServer();
+        DeliveryClient client = new DeliveryClient();
         public void StartLinstening()
-        {       
-            //input
-            TcpHelp.Listening(inputConn_Port, OnInputConnected);         
+        {
+            client.host = outputConn_Host;
+            client.port = outputConn_Port;
+
+            server.port = inputConn_Port;
+            server.Conn_OnConnected = ServerOnInputConnected;
+
+            server.Start();
         }
 
  
 
 
-        private void OnInputConnected(TcpClient inputClient)
-        {
-            //Bridge
+        void ServerOnInputConnected(DeliveryConnection conn)
+        {         
             string RemoteEndPoint=null;
             try
             {
-                RemoteEndPoint = inputClient.Client.RemoteEndPoint.ToString();
-                var outputClient = new TcpClient();
-                outputClient.Connect(outputConn_IPAddress, outputConn_Port);
+                RemoteEndPoint = conn.socket?.RemoteEndPoint.ToString();
 
-                if (TcpHelp.Bridge(inputClient, outputClient))
-                {           
-                    ConsoleWriteLine(DateTime.Now.ToString("[HH:mm:ss.fff]") + "转发成功["+ RemoteEndPoint+"]");
-                }
+
+                client.Connect((conn2)=> 
+                {
+                    conn.Bind(conn2);
+                    Commond.PrintConnectionInfo("转发成功[" + RemoteEndPoint + "]");
+                });           
             }
             catch (Exception ex)
-            {
-                ConsoleWriteLine(DateTime.Now.ToString("[HH:mm:ss.fff]") + "转发失败[" + RemoteEndPoint + "]:" + ex.GetBaseException().Message);
+            {              
+                Logger.Error("转发失败[" + RemoteEndPoint + "]",ex);
             }
 
         }

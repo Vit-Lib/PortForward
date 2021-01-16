@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading;
+using Vit.Core.Module.Log;
 
 namespace PortForward
 {
@@ -8,16 +9,22 @@ namespace PortForward
 
         static void Main(string[] args)
         {
-            var cmd = new Commond { OnWriteLine = Console.WriteLine };
+            var cmd = new Commond ();
 
             cmd.PrintHelp();
-           
+
+            //args = new[] { "PortForwardLocal--4572--127.0.0.1--4570" };
+            //args =new []{ "PortForwardServer--authToken--5000--5001" };
+            //args = new[] { "PortForwardClient--authToken--127.0.0.1--5001--127.0.0.1--4570--5" };
+
+            args = new[] { "PortForwardLocal--5002--192.168.0.153--80" };
+
 
             try
             {
                 //通过文件名获取配置
                 string configString = args[0];
-                //configString = "PortForwardClient--authToken--192.168.3.162--6203--192.168.3.162--3389--2";
+                //configString = "PortForwardLocal--4572--127.0.0.1--4570";
 
                 cmd.Call(configString);
 
@@ -25,7 +32,7 @@ namespace PortForward
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"出错：" + ex.GetBaseException().Message);
+                Logger.Error(ex);
                 return;
             }
             

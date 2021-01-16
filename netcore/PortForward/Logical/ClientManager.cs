@@ -1,29 +1,14 @@
-﻿#region << 版本注释 - v2 >>
-/*
- * ========================================================================
- * 版本：v2
- * 时间：190212
- * 作者：Lith   
- * Q  Q：755944120
- * 邮箱：litsoft@126.com
- * 
- * ========================================================================
-*/
-#endregion
-
-using Framework.Util.Socket;
+﻿using Sers.CL.Socket.Iocp;
 using System;
+using System.Collections.Generic;
 using System.Linq;
-using System.Net;
-using System.Net.Sockets;
-using System.Threading;
-using System.Threading.Tasks;
+using Vit.Core.Module.Log;
 
 namespace PortForward.Common
 {
     public class ClientManager
     {
-        public Action<string> ConsoleWriteLine = (msg) => { };//Console.WriteLine;//
+ 
 
 
         #region authToken authTokenBytes        
@@ -66,139 +51,141 @@ namespace PortForward.Common
         /// </summary>
         public int auth_ReadTimeout = 10000;
 
-        IPAddress server_IPAddress {
-            get
+     
+
+
+
+
+   
+        DeliveryClient outputClient = new DeliveryClient();
+        DeliveryClient localClient = new DeliveryClient();
+        public void StartConnectThread(int threadCount)
+        {
+            outputClient.host = server_Host;
+            outputClient.port = outputConn_Port;
+
+            localClient.host = localConn_Host;
+            localClient.port = localConn_Port;
+
+            while (--threadCount>0) 
             {
-                return TcpHelp.ParseToIPAddress(server_Host);
+                StartNewOutput();
             }
         }
 
-        IPAddress localConn_IPAddress
+        void StartNewOutput() 
         {
-            get
-            {
-                return TcpHelp.ParseToIPAddress(localConn_Host);
-            }
+            outputClient.Connect(Output_OnConnected);
         }
 
 
-
-
-
-        void Bridge(TcpClient clientToServer)
+        void Output_OnConnected(DeliveryConnection output) 
         {
-            new Task(()=> {
 
+            output.Conn_OnDisconnected = (conn) => 
+            {
+                StartNewOutput();
+            };
+
+            output.OnGetFrame = Output_WaitForAuth;
+
+            //(x.2)send token 
+            output.SendFrameAsync(authTokenBytes);
+        }
+
+        void Output_WaitForAuth(DeliveryConnection output, ArraySegment<byte> data)
+        {
+            //(x.1)读取数据
+            var byteList = output.ext as List<byte>;
+            if (byteList == null) byteList = new List<byte>();
+            byteList.AddRange(data);
+
+            if (byteList.Count < authTokenBytes.Length)
+            {
+                return;
+            }
+
+            #region (x.2)收到数据的长度 等于 token长度  
+            if (byteList.Count == authTokenBytes.Length)
+            {
+                if (authTokenBytes.SequenceEqual(byteList))
+                {
+                    //权限认证通过
+                    Commond.PrintConnectionInfo("发起连接--成功-权限认证通过");
+
+                    output.ext = null;
+
+                    output.OnGetFrame = Output_WaitForStartMsg;
+                    return;
+                }
+                else 
+                {
+                    //权限认证不通过
+                    Commond.PrintConnectionInfo("收到连接-失败-权限认证不通过");
+
+                    output.ext = null;
+                    output.OnGetFrame = null;
+       
+                    output.Close();
+                    return;
+                }               
+            }
+            #endregion
+
+            #region (x.3)收到数据的长度 大于 token长度            
+            if (authTokenBytes.SequenceEqual(byteList.Take(authTokenBytes.Length)))
+            {
+                //权限认证通过 且已经接受到开始标志
+                Commond.PrintConnectionInfo("发起连接--成功-权限认证通过");
+
+                output.ext = null;
+                output.OnGetFrame = null;
+   
+                Output_OnReceiveStartMsg(output, byteList.Skip(authTokenBytes.Length+1).ToArray());
+                return;
+            }
+            else
+            {
+                //权限认证不通过
+                Commond.PrintConnectionInfo("收到连接-失败-权限认证不通过");
+
+                output.ext = null;
+                output.OnGetFrame = null;
+            
+                output.Close();
+                return;
+            }
+            #endregion
+        }
+
+        void Output_WaitForStartMsg(DeliveryConnection output, ArraySegment<byte> data)
+        {
+            output.OnGetFrame = null;
+
+            Output_OnReceiveStartMsg(output, data.Slice(1));
+        }
+
+
+        void Output_OnReceiveStartMsg(DeliveryConnection output, ArraySegment<byte> data)
+        {
+            StartNewOutput(); 
+
+            localClient.Connect((local) =>
+            {
                 try
-                {                   
-
-                    var clientToLocal = new TcpClient();
-                    clientToLocal.Connect(TcpHelp.ParseToIPAddress(localConn_Host), localConn_Port);
-                 
-                    if (TcpHelp.Bridge(clientToServer, clientToLocal))
+                {
+                    if (data.Count != 0)
                     {
-                        ConsoleWriteLine(DateTime.Now.ToString("[HH:mm:ss.fff]") + "转发成功");
-                    }  
+                        local.SendFrameAsync(data);
+                    }
                 }
                 catch (Exception ex)
                 {
-                    ConsoleWriteLine(DateTime.Now.ToString("[HH:mm:ss.fff]") + "转发失败:" + ex.GetBaseException().Message);
-                }
-            }).Start();             
+                    Logger.Error(ex);
+                }                
+                local.Bind(output);
+            });
         }
-
-        public void StartConnectThread(int threadCount)
-        {
-            while ((--threadCount) >= 0)
-                StartConnectThread();
-        }
-
-        /// <summary>
-        /// 调用一次开启一个线程，且不会终止
-        /// </summary>
-        public void StartConnectThread()
-        {
-            new Task(() =>
-            {
-                byte[] receivedBuff = new byte[authTokenBytes.Length];
-                while (true)
-                {
-                    try
-                    {
-                       
-                        var outputClient = new TcpClient();
-                        outputClient.Connect(server_IPAddress, outputConn_Port);
-
-                        if (!OutPut_SendAuth(outputClient, receivedBuff))
-                        {
-                            outputClient.Close();
-                            ConsoleWriteLine(DateTime.Now.ToString("[HH:mm:ss.fff]") + "发起连接--失败-权限不正确");
-                            Thread.Sleep(2000);
-                            continue;
-                        }
-                        ConsoleWriteLine(DateTime.Now.ToString("[HH:mm:ss.fff]") + "发起连接--成功-权限认证通过");
-                        try
-                        {                            
-                            OutPut_ReceiveStartMsg(outputClient);
-                        }
-                        catch (Exception)
-                        {
-                            outputClient.Close();
-                            continue;
-                        }
-                       
-                        Bridge(outputClient);
-                    }
-                    catch { }
-                }
-
-            }).Start();
-        }
-        
-        /// <summary>
-        /// 不会抛异常，不会关闭outputClient
-        /// </summary>
-        /// <param name="outputClient"></param>
-        /// <param name="receivedBuff"></param>
-        /// <returns></returns>
-        bool OutPut_SendAuth(TcpClient outputClient, byte[] receivedBuff)
-        {
-            try
-            {
-                var stream = outputClient.GetStream();
-
-                //write
-                stream.Write(authTokenBytes, 0, authTokenBytes.Length);
-                stream.Flush();
-
-                //read
-                var ReadTimeout = stream.ReadTimeout;
-                stream.ReadTimeout = auth_ReadTimeout;
-                stream.Read(receivedBuff, 0, receivedBuff.Length);
-                stream.ReadTimeout = ReadTimeout;
-
-                //比较
-                if (authTokenBytes.SequenceEqual(receivedBuff))
-                {
-                    return true;
-                }
-            }
-            catch { }
-            return false;
-        }
-        /// <summary>
-        /// 失败则抛异常，不会关闭outputClient
-        /// </summary>
-        /// <param name="outputClient"></param>
-        void OutPut_ReceiveStartMsg(TcpClient outputClient)
-        {
-            var stream = outputClient.GetStream();
-            int ReadTimeout = stream.ReadTimeout;
-            //5分钟自动重新连接
-            stream.ReadTimeout=300000;
-            outputClient.GetStream().ReadByte();
-            stream.ReadTimeout = ReadTimeout;
-        }
-
+           
     }
 }

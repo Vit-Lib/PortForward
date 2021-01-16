@@ -1,29 +1,14 @@
-﻿#region << 版本注释 - v2 >>
-/*
- * ========================================================================
- * 版本：v2
- * 时间：190212
- * 作者：Lith   
- * Q  Q：755944120
- * 邮箱：litsoft@126.com
- * 
- * ========================================================================
-*/
-#endregion
-
-using Framework.Util.Socket;
+﻿using Sers.CL.Socket.Iocp;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Sockets;
+using Vit.Core.Module.Log;
 
 namespace PortForward.Common
 {
     public class ServerManager
     {
-        public Action<string> ConsoleWriteLine = (msg) => { };//Console.WriteLine;//
-
 
         #region authToken authTokenBytes        
         /// <summary>
@@ -46,128 +31,129 @@ namespace PortForward.Common
         public int inputConn_Port;
         public int outputConn_Port;
 
-        public int auth_ReadTimeout = 500;
+ 
 
         public void StartLinstening()
         {
             //input
-            TcpHelp.Listening(inputConn_Port, OnInputConnected);
+            DeliveryServer inputServer = new DeliveryServer();
+            inputServer.port = inputConn_Port;
+            inputServer.Conn_OnConnected = OnInputConnected;
+
+            inputServer.Start();
+
 
             //output
-            TcpHelp.Listening(outputConn_Port, OnOutputConnected);
+            DeliveryServer outputServer = new DeliveryServer();
+            outputServer.port = outputConn_Port;
+            outputServer.Conn_OnConnected = OnOutputConnected;
+
+            outputServer.Start();     
         }
 
-        /// <summary>
-        /// 获取连接中的output
-        /// 不抛异常
-        /// 若获取不到则返回null
-        /// </summary>
-        /// <returns></returns>
-        private TcpClient GetConnectedOutputFromQueue()
+       
+
+        void OnInputConnected(DeliveryConnection input)
         {
-            TcpClient outputClient;
+            DeliveryConnection output;
+            #region get output
             while (true)
             {
-                if (!outputQueue.TryDequeue(out outputClient)) return null;
+                if (!outputQueue.TryDequeue(out output)) break;
 
-                if (TcpHelp.TcpClientIsConnected(outputClient, 10))
+                if (output.IsConnected)
                 {
-                    return outputClient;
+                    break;
                 }
-                try
-                {
-                    outputClient?.Close();
-                }
-                catch { }
+            }            
+            #endregion
+
+
+            if (output == null)
+            {
+                inputQueue.Enqueue(input);
             }
+            else 
+            {
+                Commond.PrintConnectionInfo("转发成功");
+                input.Bind(output);
+                //OutPut_SendStartMsg
+                output.SendFrameAsync(StartMsg);
+            }           
+        }         
+         
+        
+        private void OnOutputConnected(DeliveryConnection output)
+        {
+            output.OnGetFrame = Output_OnGetFrame;          
         }
 
-        private void OnInputConnected(TcpClient inputClient)
+
+        void Output_OnGetFrame(DeliveryConnection output, ArraySegment<byte> data) 
         {
-            TcpClient outputClient = GetConnectedOutputFromQueue();
-            if (null == outputClient)
+            //(x.1)读取数据
+            var byteList = output.ext as List<byte>;
+            if (byteList == null) byteList = new List<byte>();
+            byteList.AddRange(data);
+
+            if (byteList.Count < authTokenBytes.Length)
             {
-                inputQueue.Enqueue(inputClient);
                 return;
             }
 
-            Bridge(inputClient, outputClient);
-        }
-
-        private void Bridge(TcpClient inputClient, TcpClient outputClient)
-        {
-
-            try
-            {
-                OutPut_SendStartMsg(outputClient);
-            }
-            catch (Exception)
-            {
-                inputClient.Close();
-                outputClient.Close();
-                throw;
-            }
-
-            if (TcpHelp.Bridge(outputClient, inputClient))
-            {
-                ConsoleWriteLine(DateTime.Now.ToString("[HH:mm:ss.fff]") + "转发成功");
-            }
-        }
-
-
-        bool OutPut_CheckAuth(TcpClient outputClient)
-        {
-            try
-            {
-                var stream = outputClient.GetStream();
-
-                byte[] receivedBuff = new byte[authTokenBytes.Length];
-
-                //read
-                var ReadTimeout = stream.ReadTimeout;
-                stream.ReadTimeout = auth_ReadTimeout;
-                stream.Read(receivedBuff, 0, receivedBuff.Length);
-                stream.ReadTimeout = ReadTimeout;
-
-                //比较
-                if (authTokenBytes.SequenceEqual(receivedBuff))
-                {
-                    //write
-                    stream.Write(authTokenBytes, 0, authTokenBytes.Length);
-                    stream.Flush();
-                    return true;
-                }
-            }
-            catch { }
-            return false;
-        }
-        void OutPut_SendStartMsg(TcpClient outputClient)
-        {
-            outputClient.GetStream().WriteByte(0);
-        }
-        private void OnOutputConnected(TcpClient outputClient)
-        {
-            //权限校验
-            if (!OutPut_CheckAuth(outputClient))
-            {
-                outputClient.Close();
-                ConsoleWriteLine(DateTime.Now.ToString("[HH:mm:ss.fff]") + "收到连接-失败-权限认证不通过");
+            //(x.2)匹配不通过
+            if (byteList.Count != authTokenBytes.Length || !authTokenBytes.SequenceEqual(byteList))
+            {         
+                Commond.PrintConnectionInfo( "收到连接-失败-权限认证不通过");
+                output.Close();
                 return;
             }
-            ConsoleWriteLine(DateTime.Now.ToString("[HH:mm:ss.fff]") + "收到连接-成功-权限认证通过");
+
+            //(x.3)匹配通过
+            Commond.PrintConnectionInfo("收到连接-成功-权限认证通过");
+            output.ext = null;
+            output.OnGetFrame = null;
+
+            //(x.4)发送验证通过标志
+            output.SendFrameAsync(authTokenBytes);
 
 
-            if (inputQueue.TryDequeue(out TcpClient inputClient) && null != inputClient)
+
+            #region (x.5)进行桥接或放入连接池            
+            DeliveryConnection input;
+
+            #region get input
+            while (true)
             {
-                Bridge(inputClient, outputClient);
+                if (!inputQueue.TryDequeue(out input)) break;
+
+                if (input.IsConnected)
+                {
+                    break;
+                }
+            }
+            #endregion
+
+            if (input == null)
+            {
+                outputQueue.Enqueue(output);
             }
             else
             {
-                outputQueue.Enqueue(outputClient);
+                Commond.PrintConnectionInfo("转发成功");
+                input.Bind(output);
+                //OutPut_SendStartMsg
+                output.SendFrameAsync(StartMsg);
             }
+            #endregion
+
         }
 
-        ConcurrentQueue<TcpClient> inputQueue = new ConcurrentQueue<TcpClient>();
-        ConcurrentQueue<TcpClient> outputQueue = new ConcurrentQueue<TcpClient>();
+        byte[] StartMsg = new[] { (byte)0 };
+
+
+
+        ConcurrentQueue<DeliveryConnection> inputQueue = new ConcurrentQueue<DeliveryConnection>();
+        ConcurrentQueue<DeliveryConnection> outputQueue = new ConcurrentQueue<DeliveryConnection>();
     }
 }

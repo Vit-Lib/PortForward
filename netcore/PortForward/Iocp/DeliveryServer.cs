@@ -1,50 +1,38 @@
 ﻿//  https://freshflower.iteye.com/blog/2285272 
 
-
 using System;
-using System.Net;
-using System.Net.Sockets;
-using System.Threading;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using static PortForward.Iocp.Iocp.TcpConn;
+using System.Net;
+using System.Net.Sockets;
+using System.Threading;
+using Vit.Core.Module.Log;
+using Vit.Core.Util.Net;
+using Vit.Core.Util.Pool;
 
-namespace PortForward.Iocp.Iocp
+namespace Sers.CL.Socket.Iocp
 {
-    public class TcpServer
-    {
+    public class DeliveryServer 
+    { 
+
         /// <summary>
-        /// Mq 服务端 监听地址。若不指定则监听所有网卡。例如： "127.0.0.1"、"sersms.com"。
+        /// 服务端 监听地址。若不指定则监听所有网卡。例如： "127.0.0.1"、"sersms.com"。
         /// </summary>
-        public string host = null;
+        public string host = null;        
+        
         /// <summary>
-        /// Mq 服务端 监听端口号。例如： 10345。
+        /// 服务端 监听端口号(默认4501)
         /// </summary>
-        public int port = 10345;
-
-
-
+        public int port = 4501;
+        
         /// <summary>
         /// 缓存区大小
         /// </summary>
         public int receiveBufferSize = 8 * 1024;
 
-        /// <summary>
-        /// 请勿处理耗时操作，需立即返回
-        /// </summary>
-        public Action<TcpConn> Conn_OnDisconnected { get; set; }
-
-        /// <summary>
-        /// 请勿处理耗时操作，需立即返回
-        /// </summary>
-        public Action<TcpConn> Conn_OnConnected { get; set; }
-
-
-        /// <summary>
-        /// 请勿处理耗时操作，需立即返回。收到数据事件
-        /// </summary>
-        public Action<TcpConn, ArraySegment<byte>> Conn_OnGetData { set; get; }
+   
+        public Action<DeliveryConnection> Conn_OnConnected { private get; set; }      
  
  
     
@@ -54,11 +42,11 @@ namespace PortForward.Iocp.Iocp
 
             try
             {
-                TcpConn.LogMessage("[ServerMq] Socket.Iocp,starting... host:" + host + " port:" + port);
+                //Logger.Info("[CL.DeliveryServer] Socket.Iocp,starting... host:" + host + " port:" + port);
 
                 connMap.Clear();
 
-                IPEndPoint localEndPoint = new IPEndPoint(String.IsNullOrEmpty(host)?IPAddress.Any: TcpConn.ParseToIPAddress(host), port);
+                IPEndPoint localEndPoint = new IPEndPoint(String.IsNullOrEmpty(host)?IPAddress.Any: NetHelp.ParseToIPAddress(host), port);
                 listenSocket = new global::System.Net.Sockets.Socket(localEndPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
                 listenSocket.Bind(localEndPoint);
 
@@ -68,17 +56,17 @@ namespace PortForward.Iocp.Iocp
                 // post accepts on the listening socket
                 StartAccept(null);
 
-                TcpConn.LogMessage("[ServerMq] Socket.Iocp,started.");
+                //Logger.Info("[CL.DeliveryServer] Socket.Iocp,started.");
                 return true;
             }
             catch (Exception ex)
             {
-                TcpConn.LogError(ex);
+                Logger.Error(ex);
             }
             return false;
         }
 
-
+ 
         /// <summary>
         /// 停止服务
         /// </summary>
@@ -89,8 +77,8 @@ namespace PortForward.Iocp.Iocp
             var listenSocket_ = listenSocket;
             listenSocket = null;
 
-            //(x.1) stop mqConn
-            ConnectedList.ToList().ForEach(conn => {conn.OnDisconnected(conn); });
+            //(x.1) stop conn
+            ConnectedList.ToList().ForEach(conn=>conn.Close());        
             connMap.Clear(); 
 
             //(x.2) close Socket
@@ -102,9 +90,8 @@ namespace PortForward.Iocp.Iocp
             }
             catch (Exception ex)
             {
-                TcpConn.LogError(ex);
+                Logger.Error(ex);
             }
-            
         }
        
  
@@ -113,7 +100,7 @@ namespace PortForward.Iocp.Iocp
   
 
 
-        public TcpServer()
+        public DeliveryServer()
         {
             MaxConnCount = 20000;
         }
@@ -125,11 +112,13 @@ namespace PortForward.Iocp.Iocp
         private int maxConnectCount;
 
 
-        public int MaxConnCount { get { return maxConnectCount; }
-            set {
+        public int MaxConnCount { 
+            get { return maxConnectCount; }
+            set 
+            {
                 maxConnectCount = value;
                 m_maxNumberAcceptedClients = new Semaphore(maxConnectCount, maxConnectCount);
-                pool_ReceiveEventArgs.Capacity = maxConnectCount;
+                //pool_ReceiveEventArgs.Capacity = maxConnectCount;
             }
         }
 
@@ -139,11 +128,11 @@ namespace PortForward.Iocp.Iocp
         Semaphore m_maxNumberAcceptedClients;
 
         /// <summary>
-        ///  connGuid -> MqConnect
+        ///  connHashCode -> DeliveryConnection
         /// </summary>
-        public readonly ConcurrentDictionary<int, TcpConn> connMap = new ConcurrentDictionary<int, TcpConn>();
+        readonly ConcurrentDictionary<int, DeliveryConnection> connMap = new ConcurrentDictionary<int, DeliveryConnection>();
 
-        public IEnumerable<TcpConn> ConnectedList => connMap.Values;
+        public IEnumerable<DeliveryConnection> ConnectedList => connMap.Values.Select(conn=>((DeliveryConnection)conn));
 
 
 
@@ -151,24 +140,16 @@ namespace PortForward.Iocp.Iocp
 
         #region ReceiveEventArgs
 
-
         SocketAsyncEventArgs ReceiveEventArgs_Create(global::System.Net.Sockets.Socket socket)
         {
-            var conn = new TcpConn();
-            conn.Init(socket);
-            conn.OnGetData = Conn_OnGetData;
+            var conn = Delivery_OnConnected(socket);           
 
-            conn.OnDisconnected = MqConn_Release;
-            conn.OnDisconnected += Conn_OnDisconnected;
+            SocketAsyncEventArgs receiveEventArgs = new SocketAsyncEventArgs();
+            receiveEventArgs.Completed += new EventHandler<SocketAsyncEventArgs>(IO_Completed);
 
-            var receiveEventArgs = pool_ReceiveEventArgs.PopOrNull();
-            if (receiveEventArgs == null)
-            {
-                receiveEventArgs = new SocketAsyncEventArgs();
-                receiveEventArgs.Completed += new EventHandler<SocketAsyncEventArgs>(IO_Completed);
-            }
 
-            var buff =  new byte[receiveBufferSize];
+            //var buff = DataPool.BytesGet(receiveBufferSize);
+            var buff = new byte[receiveBufferSize];
             receiveEventArgs.SetBuffer(buff, 0, buff.Length);
  
             receiveEventArgs.UserToken = conn;
@@ -177,12 +158,10 @@ namespace PortForward.Iocp.Iocp
             return receiveEventArgs;
         }
 
-        ObjectPool<SocketAsyncEventArgs> pool_ReceiveEventArgs = new ObjectPool<SocketAsyncEventArgs>();
 
         void ReceiveEventArgs_Release(SocketAsyncEventArgs receiveEventArgs)
         {
             receiveEventArgs.UserToken = null;
-            pool_ReceiveEventArgs.Push(receiveEventArgs);
         }
         #endregion
 
@@ -221,23 +200,7 @@ namespace PortForward.Iocp.Iocp
             {          
                 // Get the socket for the accepted client connection and put it into the 
                 //ReadEventArg object user token
-                SocketAsyncEventArgs receiveEventArgs = ReceiveEventArgs_Create(acceptEventArgs.AcceptSocket);
-
-                TcpConn mqConn = (TcpConn)receiveEventArgs.UserToken;
-
-                //if (mqConn != null)
-                {
-                    connMap[mqConn.GetHashCode()] = mqConn;
-
-                    try
-                    {
-                        Conn_OnConnected?.Invoke(mqConn);
-                    }
-                    catch (Exception ex)
-                    {
-                        TcpConn.LogError(ex);
-                    }
-                }
+                SocketAsyncEventArgs receiveEventArgs = ReceiveEventArgs_Create(acceptEventArgs.AcceptSocket);               
 
                 if (!acceptEventArgs.AcceptSocket.ReceiveAsync(receiveEventArgs))
                 {
@@ -246,7 +209,7 @@ namespace PortForward.Iocp.Iocp
             }
             catch (Exception ex)
             {
-                TcpConn.LogError(ex);
+                Logger.Error(ex);
             }
 
             // Accept the next connection request
@@ -264,12 +227,12 @@ namespace PortForward.Iocp.Iocp
                     ProcessReceive(e);
                     break;
                 case SocketAsyncOperation.Send:
-                    //Logger.Info("[Iocp]IO_Completed Send");
+                    Logger.Info("[Iocp]IO_Completed Send");
                     return;
                 //    ProcessSend(e);
                 //    break;
                 default:
-                    //Logger.Info("[Iocp]IO_Completed default");
+                    Logger.Info("[Iocp]IO_Completed default");
                     throw new ArgumentException("The last operation completed on the socket was not a receive or send");
             }
 
@@ -285,49 +248,72 @@ namespace PortForward.Iocp.Iocp
             try
             {
                 //读取数据
-                TcpConn mqConn = (TcpConn)e.UserToken;
-                if (mqConn != null)
+                DeliveryConnection conn = (DeliveryConnection)e.UserToken;
+                if (conn != null)
                 {
                     // check if the remote host closed the connection               
                     if (e.BytesTransferred > 0 && e.SocketError == SocketError.Success)
                     {
                         //读取数据
-                        mqConn.OnGetData(mqConn,new ArraySegment<byte>(e.Buffer, e.Offset, e.BytesTransferred));
+                        conn.AppendData(new ArraySegment<byte>(e.Buffer, e.Offset, e.BytesTransferred));
 
+                        //byte[] buffData = DataPool.BytesGet(receiveBufferSize);
                         byte[] buffData = new byte[receiveBufferSize];
                         e.SetBuffer(buffData, 0, buffData.Length);
 
                         // start loop
                         //继续接收. 为什么要这么写,请看Socket.ReceiveAsync方法的说明
-                        if (!mqConn.socket.ReceiveAsync(e))
+                        if (!conn.socket.ReceiveAsync(e))
                             ProcessReceive(e);
                     }
                     else
                     {
-                        mqConn.Close();
+                        conn.Close();
                     }
                 }
             }
             catch (Exception ex)
             {
-                TcpConn.LogError(ex);
+                Logger.Error(ex);
             }
         }
 
-       
 
-  
-        private void MqConn_Release(TcpConn conn)
+        #region Delivery_Event
+
+        private DeliveryConnection Delivery_OnConnected(global::System.Net.Sockets.Socket socket)
         {
-            // decrement the counter keeping track of the total number of clients connected to the server
-            m_maxNumberAcceptedClients.Release();
+            var conn = new DeliveryConnection();
  
-            ReceiveEventArgs_Release(conn.receiveEventArgs);
+            conn.Init(socket);           
 
-            connMap.TryRemove(conn.GetHashCode(),out _);            
+            conn.Conn_OnDisconnected = Delivery_OnDisconnected;
 
+            connMap[conn.GetHashCode()] = conn;
+            try
+            {
+                Conn_OnConnected?.Invoke(conn);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex);
+            }
+
+            return conn;
         }
 
+        void Delivery_OnDisconnected(DeliveryConnection conn)
+        {
+            // decrement the counter keeping track of the total number of clients connected to the server
+            m_maxNumberAcceptedClients.Release();    
+
+            ReceiveEventArgs_Release(conn.receiveEventArgs);
+
+            connMap.TryRemove(conn.GetHashCode(),out _);
+
+            //conn.Close();
+        }
+        #endregion
 
 
     }
