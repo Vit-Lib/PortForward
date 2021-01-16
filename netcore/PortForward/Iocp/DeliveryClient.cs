@@ -5,7 +5,6 @@ using System.Net;
 using System.Net.Sockets;
 using Vit.Core.Module.Log;
 using Vit.Core.Util.Net;
-using Vit.Core.Util.Pool;
 
 namespace Sers.CL.Socket.Iocp
 {
@@ -83,8 +82,7 @@ namespace Sers.CL.Socket.Iocp
             var conn = e.UserToken as DeliveryConnection;
             if (conn == null)
             {
-                throw new Exception("[iocp]Error");
-                return;
+                throw new Exception("[iocp]Error[2021-01-17_lith_001]");
             }
 
             try
@@ -146,8 +144,7 @@ namespace Sers.CL.Socket.Iocp
             var conn = e.UserToken as DeliveryConnection;
             if (conn == null)
             {
-                throw new Exception("[iocp]Error");
-                //return;
+                throw new Exception("[iocp]Error[2021-01-17_lith_002]");
             }
 
             try

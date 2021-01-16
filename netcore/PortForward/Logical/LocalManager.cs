@@ -1,5 +1,6 @@
 ﻿using Sers.CL.Socket.Iocp;
 using System;
+using System.Collections.Generic;
 using Vit.Core.Module.Log;
 
 namespace PortForward.Common
@@ -38,8 +39,7 @@ namespace PortForward.Common
             string RemoteEndPoint=null;
             try
             {
-                RemoteEndPoint = conn.socket?.RemoteEndPoint.ToString();
-
+                RemoteEndPoint = conn.socket?.RemoteEndPoint.ToString();   
 
                 client.Connect((conn2)=> 
                 {

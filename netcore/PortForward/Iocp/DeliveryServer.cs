@@ -270,7 +270,7 @@ namespace Sers.CL.Socket.Iocp
                     {
                         conn.Close();
                     }
-                }
+                }                 
             }
             catch (Exception ex)
             {

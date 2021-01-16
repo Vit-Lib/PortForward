@@ -38,7 +38,7 @@ namespace PortForward.Common
             //input
             DeliveryServer inputServer = new DeliveryServer();
             inputServer.port = inputConn_Port;
-            inputServer.Conn_OnConnected = OnInputConnected;
+            inputServer.Conn_OnConnected = Input_OnConnected;
 
             inputServer.Start();
 
@@ -46,14 +46,14 @@ namespace PortForward.Common
             //output
             DeliveryServer outputServer = new DeliveryServer();
             outputServer.port = outputConn_Port;
-            outputServer.Conn_OnConnected = OnOutputConnected;
+            outputServer.Conn_OnConnected = Output_OnConnected;
 
             outputServer.Start();     
         }
 
        
 
-        void OnInputConnected(DeliveryConnection input)
+        void Input_OnConnected(DeliveryConnection input)
         {
             DeliveryConnection output;
             #region get output
@@ -64,7 +64,7 @@ namespace PortForward.Common
                 if (output.IsConnected)
                 {
                     break;
-                }
+                }              
             }            
             #endregion
 
@@ -83,22 +83,25 @@ namespace PortForward.Common
         }         
          
         
-        private void OnOutputConnected(DeliveryConnection output)
+        private void Output_OnConnected(DeliveryConnection output)
         {
             output.OnGetFrame = Output_OnGetFrame;          
         }
 
 
-        void Output_OnGetFrame(DeliveryConnection output, ArraySegment<byte> data) 
+        ArraySegment<byte> Output_OnGetFrame(DeliveryConnection output, ArraySegment<byte> data) 
         {
             //(x.1)读取数据
             var byteList = output.ext as List<byte>;
-            if (byteList == null) byteList = new List<byte>();
+            if (byteList == null)
+            {
+                output.ext = byteList = new List<byte>();
+            }
             byteList.AddRange(data);
 
             if (byteList.Count < authTokenBytes.Length)
             {
-                return;
+                return null;
             }
 
             //(x.2)匹配不通过
@@ -106,7 +109,7 @@ namespace PortForward.Common
             {         
                 Commond.PrintConnectionInfo( "收到连接-失败-权限认证不通过");
                 output.Close();
-                return;
+                return null;
             }
 
             //(x.3)匹配通过
@@ -116,7 +119,6 @@ namespace PortForward.Common
 
             //(x.4)发送验证通过标志
             output.SendFrameAsync(authTokenBytes);
-
 
 
             #region (x.5)进行桥接或放入连接池            
@@ -146,6 +148,8 @@ namespace PortForward.Common
                 output.SendFrameAsync(StartMsg);
             }
             #endregion
+
+            return null;
 
         }
 

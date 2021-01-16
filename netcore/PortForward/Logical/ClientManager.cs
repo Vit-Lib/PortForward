@@ -2,6 +2,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Vit.Core.Module.Log;
 
 namespace PortForward.Common
@@ -67,7 +69,7 @@ namespace PortForward.Common
             localClient.host = localConn_Host;
             localClient.port = localConn_Port;
 
-            while (--threadCount>0) 
+            while (--threadCount>=0) 
             {
                 StartNewOutput();
             }
@@ -88,21 +90,25 @@ namespace PortForward.Common
             };
 
             output.OnGetFrame = Output_WaitForAuth;
-
+ 
             //(x.2)send token 
             output.SendFrameAsync(authTokenBytes);
+      
         }
 
-        void Output_WaitForAuth(DeliveryConnection output, ArraySegment<byte> data)
+        ArraySegment<byte> Output_WaitForAuth(DeliveryConnection output, ArraySegment<byte> data)
         {
             //(x.1)读取数据
             var byteList = output.ext as List<byte>;
-            if (byteList == null) byteList = new List<byte>();
+            if(byteList==null)
+            {
+                output.ext = byteList = new List<byte>();
+            }
             byteList.AddRange(data);
 
             if (byteList.Count < authTokenBytes.Length)
             {
-                return;
+                return null;
             }
 
             #region (x.2)收到数据的长度 等于 token长度  
@@ -116,7 +122,7 @@ namespace PortForward.Common
                     output.ext = null;
 
                     output.OnGetFrame = Output_WaitForStartMsg;
-                    return;
+                    return null;
                 }
                 else 
                 {
@@ -127,7 +133,7 @@ namespace PortForward.Common
                     output.OnGetFrame = null;
        
                     output.Close();
-                    return;
+                    return null;
                 }               
             }
             #endregion
@@ -142,7 +148,7 @@ namespace PortForward.Common
                 output.OnGetFrame = null;
    
                 Output_OnReceiveStartMsg(output, byteList.Skip(authTokenBytes.Length+1).ToArray());
-                return;
+                return null;
             }
             else
             {
@@ -153,16 +159,17 @@ namespace PortForward.Common
                 output.OnGetFrame = null;
             
                 output.Close();
-                return;
+                return null;
             }
             #endregion
         }
 
-        void Output_WaitForStartMsg(DeliveryConnection output, ArraySegment<byte> data)
+        ArraySegment<byte> Output_WaitForStartMsg(DeliveryConnection output, ArraySegment<byte> data)
         {
             output.OnGetFrame = null;
 
             Output_OnReceiveStartMsg(output, data.Slice(1));
+            return null;
         }
 
 
