@@ -9,7 +9,6 @@ using System.Net.Sockets;
 using System.Threading;
 using Vit.Core.Module.Log;
 using Vit.Core.Util.Net;
-using Vit.Core.Util.Pool;
 
 namespace Sers.CL.Socket.Iocp
 {

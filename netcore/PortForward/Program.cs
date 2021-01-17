@@ -19,6 +19,7 @@ namespace PortForward
             //args = new[] { "PortForwardLocal--5002--192.168.0.153--80" };
             //args = new[] { "PortForwardClient--authToken--127.0.0.1--5001--192.168.0.153--80--5" };
 
+            if (args == null || args.Length == 0) args = new[] { "Help" };
 
             try
             {

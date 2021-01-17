@@ -55,6 +55,7 @@ namespace Sers.CL.Socket.Iocp
             try
             {
                 //msgFrameToSend.Add(data);
+     
                 socket.SendAsync(data, SocketFlags.None);
             }
             catch (Exception ex)

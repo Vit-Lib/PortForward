@@ -27,6 +27,7 @@ namespace PortForward
                 case "PortForwardClient": RunClient(config); return;
                 case "PortForwardServer": RunServer(config); return;
                 case "PortForwardLocal": RunLocal(config); return;
+                case "Help":  return;
             }
             throw new Exception("错误：配置信息不合法！！");
         }
@@ -119,7 +120,7 @@ namespace PortForward
         public void PrintHelp()
         {
             #region print Help
-            WriteLine("version:  1.10");
+            WriteLine("version: "+ System.Diagnostics.FileVersionInfo.GetVersionInfo(System.Reflection.Assembly.GetEntryAssembly().Location).FileVersion);
             WriteLine("author:  lith");
             WriteLine("email:   sersms@163.com");
             WriteLine("----Lith端口转发----");
