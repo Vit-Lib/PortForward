@@ -40,7 +40,7 @@ cd /home/ec2-user/image
 #构建镜像并推送到 Docker Hub
 
 cd portforward
-docker buildx build -t sersms/portforward:1.11  --platform=linux/amd64,linux/arm64,linux/arm/v7 . --push
+docker buildx build -t sersms/portforward:1.12  --platform=linux/amd64,linux/arm64,linux/arm/v7 . --push
 cd .. 
 
   

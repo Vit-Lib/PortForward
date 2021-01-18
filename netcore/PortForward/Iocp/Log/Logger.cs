@@ -11,7 +11,15 @@ namespace Vit.Core.Module.Log
         /// <summary>
         ///  例如    (level, msg)=> { Console.WriteLine("[" + level + "]" + DateTime.Now.ToString("[HH:mm:ss.ffff]") + msg);   };
         /// </summary>
-        public static Action<Level, string> OnLog= (level, msg) => { Console.WriteLine("[" + level + "]" + DateTime.Now.ToString("[HH:mm:ss.ffff]") + msg); };
+        public static Action<Level, string> OnLog= 
+            (level, msg) => {
+                if (level == Level.INFO) 
+                {
+                    Console.WriteLine(DateTime.Now.ToString("[HH:mm:ss.ffff]") + msg);
+                    return;
+                }
+                Console.WriteLine("[" + level + "]" + DateTime.Now.ToString("[HH:mm:ss.ffff]") + msg);
+            };
 
         /// <summary>
         /// DEBUG （调试信息）：记录系统用于调试的一切信息，内容或者是一些关键数据内容的输出

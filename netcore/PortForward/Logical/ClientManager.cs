@@ -117,7 +117,7 @@ namespace PortForward.Common
                 if (authTokenBytes.SequenceEqual(byteList))
                 {
                     //权限认证通过
-                    Commond.PrintConnectionInfo("发起连接--成功-权限认证通过");
+                    Logger.Info("发起连接--成功-权限认证通过");
 
                     output.ext = null;
 
@@ -127,7 +127,7 @@ namespace PortForward.Common
                 else 
                 {
                     //权限认证不通过
-                    Commond.PrintConnectionInfo("收到连接-失败-权限认证不通过");
+                    Logger.Info("收到连接-失败-权限认证不通过");
 
                     output.ext = null;
                     output.OnGetFrame = null;
@@ -142,7 +142,7 @@ namespace PortForward.Common
             if (authTokenBytes.SequenceEqual(byteList.Take(authTokenBytes.Length)))
             {
                 //权限认证通过 且已经接受到开始标志
-                Commond.PrintConnectionInfo("发起连接--成功-权限认证通过");
+                Logger.Info("发起连接--成功-权限认证通过");
 
                 output.ext = null;
                 output.OnGetFrame = null;
@@ -153,7 +153,7 @@ namespace PortForward.Common
             else
             {
                 //权限认证不通过
-                Commond.PrintConnectionInfo("收到连接-失败-权限认证不通过");
+                Logger.Info("收到连接-失败-权限认证不通过");
 
                 output.ext = null;
                 output.OnGetFrame = null;

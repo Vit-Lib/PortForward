@@ -1,5 +1,5 @@
  
-rd /s/q "04.Publish"
+rd /s/q "PortForward"
 
 rd /s/q "05.nuget/nuget"
 

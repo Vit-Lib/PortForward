@@ -7,7 +7,7 @@ namespace PortForward
     public class Commond
     {
 
-        public static Action<string> PrintConnectionInfo = null;
+      
 
         private void WriteLine(string value)
         {
@@ -56,8 +56,8 @@ namespace PortForward
             WriteLine($"connectCount:{connectCount}");
 
             //定义显示输出
-            if (config.Length <= 7 || "NoPrint" != config[7])
-                PrintConnectionInfo = Logger.Info;
+            if (config.Length > 7 && "NoPrint" == config[7])
+                Logger.OnLog =(l,msg)=> { };
 
             WriteLine("开始...");
             mng.StartConnectThread(connectCount);
@@ -83,8 +83,8 @@ namespace PortForward
 
 
             //定义显示输出
-            if (config.Length <= 4 || "NoPrint" != config[4])
-                PrintConnectionInfo = Logger.Info;
+            if (config.Length > 4 && "NoPrint" == config[4])
+                Logger.OnLog = (l, msg) => { };
 
             WriteLine("开始...");
             mng.StartLinstening();
@@ -109,8 +109,8 @@ namespace PortForward
 
 
             //定义显示输出
-            if (config.Length <= 4 || "NoPrint" != config[4])
-                PrintConnectionInfo = Logger.Info;
+            if (config.Length > 4 && "NoPrint" == config[4])
+                Logger.OnLog = (l, msg) => { };
 
             WriteLine("开始...");
             mng.StartLinstening();

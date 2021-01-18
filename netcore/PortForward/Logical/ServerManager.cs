@@ -74,18 +74,20 @@ namespace PortForward.Common
                 inputQueue.Enqueue(input);
             }
             else 
-            {
-                Commond.PrintConnectionInfo("转发成功");
+            {        
                 input.Bind(output);
                 //OutPut_SendStartMsg
                 output.SendFrameAsync(StartMsg);
+
+                Logger.Info($" [{output.GetHashCode()}] 转发成功");
             }           
         }         
          
         
         private void Output_OnConnected(DeliveryConnection output)
         {
-            output.OnGetFrame = Output_OnGetFrame;          
+            output.OnGetFrame = Output_OnGetFrame;
+            Logger.Info($" [{output.GetHashCode()}] 收到连接");
         }
 
 
@@ -106,14 +108,14 @@ namespace PortForward.Common
 
             //(x.2)匹配不通过
             if (byteList.Count != authTokenBytes.Length || !authTokenBytes.SequenceEqual(byteList))
-            {         
-                Commond.PrintConnectionInfo( "收到连接-失败-权限认证不通过");
+            {
+                Logger.Info($" [{output.GetHashCode()}] 权限认证-不通过");
                 output.Close();
                 return null;
             }
 
             //(x.3)匹配通过
-            Commond.PrintConnectionInfo("收到连接-成功-权限认证通过");
+            Logger.Info($" [{output.GetHashCode()}] 权限认证-通过");
             output.ext = null;
             output.OnGetFrame = null;
 
@@ -141,11 +143,12 @@ namespace PortForward.Common
                 outputQueue.Enqueue(output);
             }
             else
-            {
-                Commond.PrintConnectionInfo("转发成功");
+            {    
                 input.Bind(output);
                 //OutPut_SendStartMsg
                 output.SendFrameAsync(StartMsg);
+
+                Logger.Info($" [{output.GetHashCode()}] 转发成功");
             }
             #endregion
 

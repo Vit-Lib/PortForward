@@ -47,15 +47,11 @@ namespace Sers.CL.Socket.Iocp
 
         public Action<DeliveryConnection> Conn_OnDisconnected { get; set; }
 
-        //readonly BlockingCollection<ArraySegment<byte> > msgFrameToSend = new BlockingCollection<ArraySegment<byte>>();
-
         public void SendFrameAsync(ArraySegment<byte> data)
         {
             if (data == null || socket == null) return;
             try
-            {
-                //msgFrameToSend.Add(data);
-     
+            {     
                 socket.SendAsync(data, SocketFlags.None);
             }
             catch (Exception ex)
@@ -70,7 +66,7 @@ namespace Sers.CL.Socket.Iocp
         {
             if (socket == null) return;
 
-            Logger.Info("conn 断开");
+            Logger.Info($" [{GetHashCode()}] 连接断开");
           
 
             var socket_ = socket;

@@ -44,7 +44,7 @@ namespace PortForward.Common
                 client.Connect((conn2)=> 
                 {
                     conn.Bind(conn2);
-                    Commond.PrintConnectionInfo("转发成功[" + RemoteEndPoint + "]");
+                    Logger.Info("转发成功[" + RemoteEndPoint + "]");
                 });           
             }
             catch (Exception ex)
