@@ -1,11 +1,11 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.1</TargetFramework>
     <Version>1.12</Version>
     <Authors>Lith</Authors>
-    <Description>sersms@163.com</Description>
+    <Description>serset@yeah.net</Description>
   </PropertyGroup>
 
   <ItemGroup>

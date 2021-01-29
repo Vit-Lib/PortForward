@@ -1,4 +1,4 @@
-﻿docker部署portforward
+docker部署portforward
 
  
 
@@ -13,27 +13,27 @@
 (--net=host 网络直接使用宿主机网络)（-p 6022:6022 端口映射）
  
  
-docker run --name=portforward --restart=always --net=host -d sersms/portforward dotnet PortForward.dll PortForwardServer--at111sssssfvbvdscv--10010--10011
+docker run --name=portforward --restart=always --net=host -d serset/portforward dotnet PortForward.dll PortForwardServer--at111sssssfvbvdscv--10010--10011
  
 
  
 
 
 #运行容器，在断开后自动关闭并清理
-docker run --rm -it --net=host sersms/portforward sh
+docker run --rm -it --net=host serset/portforward sh
 
-docker run --rm -it --net=host sersms/portforward dotnet PortForward.dll Help
-
-
+docker run --rm -it --net=host serset/portforward dotnet PortForward.dll Help
 
 
-docker run --rm -it --net=host sersms/portforward dotnet PortForward.dll \
+
+
+docker run --rm -it --net=host serset/portforward dotnet PortForward.dll \
 PortForwardLocal--8000--192.168.1.5--3384--NoPrint
 
-docker run --rm -it --net=host sersms/portforward dotnet PortForward.dll \
+docker run --rm -it --net=host serset/portforward dotnet PortForward.dll \
 PortForward.dll PortForwardServer--authToken--6202--6203
 
-docker run --rm -it --net=host sersms/portforward dotnet PortForward.dll \
+docker run --rm -it --net=host serset/portforward dotnet PortForward.dll \
 PortForwardClient--authToken--192.168.1.100--6203--abc.com--3389--5
  
 

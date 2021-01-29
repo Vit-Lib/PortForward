@@ -1,4 +1,4 @@
-﻿#region << 版本注释 - v2 >>
+#region << 版本注释 - v2 >>
 /*
  * ========================================================================
  * 版本：v2
@@ -132,7 +132,7 @@ namespace PortForward
             #region print Help
             WriteLine("version:  1.10");
             WriteLine("author:  lith");
-            WriteLine("email:   sersms@163.com");
+            WriteLine("email:   serset@yeah.net");
             WriteLine("----Lith端口转发----");
             WriteLine("从文件名获取配置信息,分为“本地端口转发工具”和“端口桥接工具”。");
             WriteLine("----本地端口转发工具----");

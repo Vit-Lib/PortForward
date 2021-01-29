@@ -1,4 +1,4 @@
-﻿using PortForward.Common;
+using PortForward.Common;
 using System;
 using Vit.Core.Module.Log;
 
@@ -122,7 +122,7 @@ namespace PortForward
             #region print Help
             WriteLine("version: "+ System.Diagnostics.FileVersionInfo.GetVersionInfo(System.Reflection.Assembly.GetEntryAssembly().Location).FileVersion);
             WriteLine("author:  lith");
-            WriteLine("email:   sersms@163.com");
+            WriteLine("email:   serset@yeah.net");
             WriteLine("----Lith端口转发----");
             WriteLine("从文件名获取配置信息,分为“本地端口转发工具”和“端口桥接工具”。");
             WriteLine("----本地端口转发工具----");
