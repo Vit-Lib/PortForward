@@ -6,7 +6,6 @@ namespace PortForward
 {
     public class Commond
     {
-
       
 
         private void WriteLine(string value)
@@ -120,11 +119,11 @@ namespace PortForward
         public void PrintHelp()
         {
             #region print Help
-            WriteLine("version: "+ System.Diagnostics.FileVersionInfo.GetVersionInfo(System.Reflection.Assembly.GetEntryAssembly().Location).FileVersion);
-            WriteLine("author:  lith");
-            WriteLine("email:   serset@yeah.net");
+            WriteLine("version : "+ System.Diagnostics.FileVersionInfo.GetVersionInfo(System.Reflection.Assembly.GetEntryAssembly().Location).FileVersion);
+            WriteLine("author  : lith");
+            WriteLine("代码地址: https://github.com/serset/PortForward");
             WriteLine("----Lith端口转发----");
-            WriteLine("从文件名获取配置信息,分为“本地端口转发工具”和“端口桥接工具”。");
+            WriteLine("从参数获取配置信息,分为“本地端口转发工具”和“端口桥接工具”。");
             WriteLine("----本地端口转发工具----");
             WriteLine("     配置信息格式为：");
             WriteLine("         PortForwardLocal--inputConnPort--outputConnHost--outputConnPort--NoPrint");

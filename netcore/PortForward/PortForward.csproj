@@ -1,11 +1,11 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.1</TargetFramework>
-    <Version>1.12</Version>
+    <Version>1.12.359</Version>
     <Authors>Lith</Authors>
-    <Description>serset@yeah.net</Description>
+    <Description>https://github.com/serset/Pdfor</Description>
   </PropertyGroup>
 
   <ItemGroup>

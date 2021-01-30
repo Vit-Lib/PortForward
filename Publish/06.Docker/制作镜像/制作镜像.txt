@@ -1,7 +1,6 @@
-#构建镜像
+﻿#构建镜像
 
 # docker login -u serset -p xxxxxxxxx
-
 
 #---------------------------------------------------------------------
 #(x.1)初始化构建器
@@ -33,30 +32,20 @@ docker buildx ls
 #---------------------------------------------------------------------
 #(x.2)构建多架构镜像（ arm、arm64 和 amd64 ）并推送到 Docker Hub
 
-#把本文件所在目录下的cgateway文件夹拷贝到 /home/ec2-user/image 
+#把本文件所在目录下的文件夹拷贝到image 
 cd /home/ec2-user/image 
 
 
 #构建镜像并推送到 Docker Hub
-
 cd portforward
-docker buildx build -t serset/portforward:1.12  --platform=linux/amd64,linux/arm64,linux/arm/v7 . --push
-cd .. 
-
-  
-cd portforward
-docker buildx build -t serset/portforward:latest --platform=linux/amd64,linux/arm64,linux/arm/v7 . --push
-cd .. 
-
-
+docker buildx build -t serset/portforward:1.12.359 -t serset/portforward --platform=linux/amd64,linux/arm64,linux/arm/v7 . --push
 
  
 
 
 
-
-#强制删除镜像名称中包含“sqler”的镜像
-# docker rmi --force $(docker images | grep sqler | awk '{print $3}')
+#强制删除镜像名称中包含portforward的镜像
+# docker rmi --force $(docker images | grep portforward | awk '{print $3}')
 
 
 
