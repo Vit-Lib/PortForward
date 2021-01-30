@@ -1,7 +1,8 @@
 # docker部署portforward
 > portforward为net core2.1开发的端口转发工具  
-> 运行环境 dotnet core 2.1
- 
+> 运行环境 dotnet core 2.1  
+> 代码地址: https://github.com/serset/PortForward  
+
 # 1.创建容器并运行
 > --name 容器名称，可自定义  
 > --restart=always 自动重启  
@@ -12,7 +13,6 @@
 
 ``` bash
 
-
 # 查看帮助
 docker run --rm -it --net=host serset/portforward dotnet PortForward.dll Help
 
@@ -20,11 +20,9 @@ docker run --rm -it --net=host serset/portforward dotnet PortForward.dll Help
 docker run --name=portforward --restart=always --net=host -d serset/portforward dotnet PortForward.dll PortForwardServer--at111sssssfvbvdscv--10010--10011
 
 
-
 #运行容器，在断开后自动关闭并清理
 docker run --rm -it --net=host serset/portforward sh
 dotnet PortForward.dll PortForwardLocal--8000--192.168.1.5--3384--NoPrint
-
 
 
 docker run --rm -it --net=host serset/portforward dotnet PortForward.dll \
@@ -37,13 +35,10 @@ docker run --rm -it --net=host serset/portforward dotnet PortForward.dll \
 PortForwardClient--authToken--192.168.1.100--6203--abc.com--3389--5
  
 
-
 ```
  
 
 # 2.命令说明
-
-代码地址: https://github.com/serset/Pdfor  
 从参数获取配置信息,分为“本地端口转发工具”和“端口桥接工具”。  
 ----本地端口转发工具----  
      配置信息格式为：  
@@ -79,7 +74,6 @@ PortForwardClient--authToken--192.168.1.100--6203--abc.com--3389--5
 # 3.容器常用命令
 
 ``` bash
-
 
 #查看容器logs
 docker logs portforward
