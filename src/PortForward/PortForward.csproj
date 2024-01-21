@@ -17,13 +17,7 @@
     </PropertyGroup>
 
     <PropertyGroup>
-        <DocumentationFile>bin\Debug\netstandard2.0\Vit.Linq.xml</DocumentationFile>
+        <DocumentationFile>bin\Debug\net6.0\PortForward.xml</DocumentationFile>
     </PropertyGroup>
-
-    <ItemGroup>
-        <None Update="help.bat">
-            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </None>
-    </ItemGroup>
 
 </Project>
