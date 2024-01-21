@@ -16,6 +16,10 @@
         <PackageProjectUrl>https://github.com/serset/PortForward</PackageProjectUrl>
     </PropertyGroup>
 
+    <PropertyGroup>
+        <DocumentationFile>bin\Debug\netstandard2.0\Vit.Linq.xml</DocumentationFile>
+    </PropertyGroup>
+
     <ItemGroup>
         <None Update="help.bat">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
