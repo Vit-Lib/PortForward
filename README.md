@@ -2,17 +2,11 @@
 > portforward为net core开发的端口转发工具  
 > 代码地址: https://github.com/Vit-Lib/PortForward  
 
-# 1.创建容器并运行
-> --name 容器名称，可自定义  
-> --restart=always 自动重启  
-> -v /etc/localtime:/etc/localtime 挂载宿主机localtime文件解决容器时间与主机时区不一致的问题  
-> -v $PWD/data:/data 将主机中当前目录下的data挂载到容器的/data  
-> --net=host 网络直接使用宿主机网络  
-> -p 6022:6022 端口映射  
+# 1. create container
 
 ``` bash
 
-# 查看帮助
+# show help
 docker run --rm -it --net=host serset/portforward dotnet PortForward.dll Help
 
 # 后台运行端口反向转发服务
