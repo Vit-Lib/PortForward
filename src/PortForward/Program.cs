@@ -9,7 +9,7 @@ namespace PortForward
 
         static void Main(string[] args)
         {
-            var cmd = new Commond ();
+            var cmd = new Command ();
 
             cmd.PrintHelp();
 
