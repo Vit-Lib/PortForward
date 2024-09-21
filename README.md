@@ -1,7 +1,6 @@
 # portforward
-> portforward为net core2.1开发的端口转发工具  
-> 运行环境 dotnet core 2.1  
-> 代码地址: https://github.com/serset/PortForward  
+> portforward为net core开发的端口转发工具  
+> 代码地址: https://github.com/Vit-Lib/PortForward  
 
 # 1.创建容器并运行
 > --name 容器名称，可自定义  
@@ -68,29 +67,3 @@ PortForwardClient--authToken--192.168.1.100--6203--abc.com--3389--5
  
 
 
------------------------------
-
-
-# 3.容器常用命令
-
-``` bash
-
-#查看容器logs
-docker logs portforward
-
-#在容器内执行命令行
-docker  exec -it portforward /bin/sh
-
-#停止容器
-docker stop portforward
-
-#打开容器
-docker start portforward
-
-#重启容器
-docker restart portforward
-
-#删除容器
-docker rm portforward -f
-
-```
